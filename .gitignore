@@ -1,0 +1,22 @@
+# Environment files
+.env
+apikey.env
+
+# Virtual environment
+venv/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Database files
+*.db
+
+# Datasets
+*.csv
+*.zip
+*.xlsx
+*.parquet
+
+# OS files
+.DS_Store
