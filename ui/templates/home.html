@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CyberGuard AI Suite - Stratejik Siber Güvenlik Çözümleri</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Montserrat:wght@600;700;800&display=swap" rel="stylesheet" />
+    <style>
+        :root {
+            --green-dark: #004222;
+            --green-light: #006633;
+            --black-overlay: rgba(0, 0, 0, 0.85);
+            --panel-bg: rgba(0, 0, 0, 0.75);
+            --text-primary: #e0e0e0;
+            --text-secondary: #ffffff;
+
+            --border-radius-sharp: 4px;
+            --transition-speed: 0.2s ease;
+            --shadow-subtle: 0 3px 8px rgba(0, 0, 0, 0.4);
+        }
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            margin: 0;
+            background: url('{{ url_for("static", filename="images/background.png") }}') no-repeat center center fixed;
+            background-size: cover;
+            color: var(--text-primary);
+            line-height: 1.6;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        .toolbar {
+            background-color: var(--black-overlay);
+            padding: 12px 0;
+            box-shadow: var(--shadow-subtle);
+            border-bottom: 1px solid var(--green-light);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .toolbar .container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .toolbar-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .toolbar-left img {
+            height: 35px;
+            filter: drop-shadow(0 0 4px var(--green-light));
+        }
+
+        .toolbar-left span {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--text-secondary);
+            letter-spacing: 0.5px;
+        }
+
+        .toolbar-right {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+        }
+
+        .toolbar-right .nav-button {
+            padding: 8px 16px;
+            font-size: 14px;
+            border-radius: var(--border-radius-sharp);
+            background-color: var(--green-dark);
+            color: var(--text-secondary);
+            font-weight: 500;
+            transition: background-color var(--transition-speed);
+            border: none;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .toolbar-right .nav-button:hover {
+            background-color: var(--green-light);
+        }
+
+        .hero-section {
+            flex-grow: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            z-index: 1;
+            background-color: var(--black-overlay);
+            padding: 20px 0;
+        }
+
+        .main-content-area {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+            max-width: 1050px;
+            padding : 20px;
+            box-sizing: border-box;
+        }
+
+        .left-info-panel {
+            flex: 0 0 40%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding-right: 30px;
+            box-sizing: border-box;
+        }
+
+        .main-logo {
+            width: 180px;
+            height: auto;
+            filter: drop-shadow(0 0 10px var(--green-light));
+            margin-bottom: 20px;
+        }
+
+        .main-title h1 {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 2.8em;
+            color: var(--text-secondary);
+            line-height: 1.2;
+            letter-spacing: 0.8px;
+            font-weight: 700;
+            text-shadow: 0 0 8px rgba(0, 102, 51, 0.5);
+            margin-top: 0;
+            margin-bottom: 0;
+        }
+
+        .right-description-panel {
+            flex: 0 0 60%;
+            background-color: var(--panel-bg);
+            border: 1px solid var(--green-dark);
+            border-radius: var(--border-radius-sharp);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(3px);
+            -webkit-backdrop-filter: blur(3px);
+            padding: 30px;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .right-description-panel p {
+            font-size: 0.9em;
+            color: var(--text-primary);
+            line-height: 1.6;
+            margin-bottom: 0;
+            text-align: justify;
+        }
+
+        .right-description-panel strong {
+            color: var(--green-light);
+            font-weight: 600;
+        }
+
+        @media (max-width: 1024px) {
+            .main-content-area {
+                flex-direction: column;
+                height: auto;
+                padding: 15px;
+            }
+            .left-info-panel, .right-description-panel {
+                flex: none;
+                width: 100%;
+                height: auto;
+                padding-right: 0;
+            }
+            .left-info-panel {
+                margin-bottom: 25px;
+            }
+            .main-logo {
+                width: 150px;
+                margin-bottom: 15px;
+            }
+            .main-title h1 {
+                font-size: 2.2em;
+            }
+            .right-description-panel {
+                padding: 25px;
+            }
+            .right-description-panel p {
+                font-size: 0.85em;
+                text-align: center;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .toolbar .container {
+                flex-direction: column;
+                gap: 10px;
+            }
+            .toolbar-left span {
+                font-size: 18px;
+            }
+            .toolbar-left img {
+                height: 30px;
+            }
+            .toolbar-right {
+                flex-wrap: wrap;
+                justify-content: center;
+                gap: 6px;
+                width: 100%;
+            }
+            .toolbar-right .nav-button {
+                flex: 1 1 48%;
+                font-size: 12px;
+                padding: 7px 10px;
+            }
+            .main-content-area {
+                padding: 10px;
+            }
+            .left-info-panel {
+                margin-bottom: 20px;
+            }
+            .main-logo {
+                width: 120px;
+            }
+            .main-title h1 {
+                font-size: 1.8em;
+            }
+            .right-description-panel {
+                padding: 20px;
+            }
+            .right-description-panel p {
+                font-size: 0.8em;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .toolbar-left span {
+                font-size: 16px;
+            }
+            .toolbar-left img {
+                height: 28px;
+            }
+            .toolbar-right .nav-button {
+                font-size: 11px;
+                padding: 5px 8px;
+            }
+            .main-content-area {
+                padding: 5px;
+            }
+            .left-info-panel {
+                margin-bottom: 15px;
+            }
+            .main-logo {
+                width: 100px;
+            }
+            .main-title h1 {
+                font-size: 1.5em;
+                line-height: 1.1;
+            }
+            .right-description-panel p {
+                font-size: 0.75em;
+                line-height: 1.4;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <header class="toolbar">
+        <div class="container">
+            <div class="toolbar-left">
+                <img src="{{ url_for('static', filename='images/logo.png') }}" alt="CyberGuard AI Suite Logo" />
+                <span>CYBERGUARD AI SUITE</span>
+            </div>
+            <nav class="toolbar-right">
+                <a href="/malware" class="nav-button">Malware Analizi</a>
+                <a href="/photo" class="nav-button">Fotoğraf Analizi</a>
+                <a href="/code" class="nav-button">Kod Analizi</a>
+                <a href="/network" class="nav-button">Ağ Analizi</a>
+                <a href="/url" class="nav-button">URL Analizi</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="hero-section">
+        <div class="container main-content-area">
+            <div class="left-info-panel">
+                <img class="main-logo" src="{{ url_for('static', filename='images/logo.png') }}" alt="CyberGuard AI Suite Ana Logo" />
+                <div class="main-title">
+                    <h1>AI Destekli Siber Güvence</h1>
+                </div>
+            </div>
+
+            <div class="right-description-panel">
+               <p>
+    CyberGuard AI Suite, yapay zeka destekli entegre bir güvenlik platformudur.<br><br>
+    • Dosya Analizi: Zararlı yazılım ve fidye yazılım tespiti.<br>
+    • Görüntü Analizi: AI tabanlı yüz ve nesne tanıma.<br>
+    • Kod Analizi: Python kodlarında güvenlik açığı tespiti.<br>
+    • Ağ Analizi: Gerçek zamanlı anomali ve sızma tespiti.<br>
+    • URL Analizi: Kimlik avı ve kötü amaçlı URL tespiti.<br><br>
+    Hızlı, doğru ve kapsamlı tehdit analizi ile dijital varlıklarınızı güvence altına alır.
+</p>
+            </div>
+        </div>
+    </main>
+
+</body>
+</html>

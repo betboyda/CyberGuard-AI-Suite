@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CyberGuard AI Suite - Ağ Trafiği Analizi</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Montserrat:wght@600;700;800&display=swap" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        /* Renkler: Senin verdiğin tonlara sadık kalındı */
+        :root {
+            --green-dark: #004225; /* Ana koyu yeşil */
+            --green-light: #006633; /* Açık yeşil vurgu */
+            --black-overlay: rgba(0, 0, 0, 0.85); /* Arka plan üzerine çok koyu katman */
+            --panel-bg: rgba(0, 0, 0, 0.75); /* İçerik paneli şeffaf siyah */
+            --text-primary: #e0e0e0; /* Genel metin rengi */
+            --text-secondary: #ffffff; /* Başlık ve önemli metinler */
+
+            --border-radius-sharp: 4px; /* Köşeler daha keskin */
+            --transition-speed: 0.2s ease; /* Hızlı geçişler */
+            --shadow-subtle: 0 3px 8px rgba(0, 0, 0, 0.4); /* Hafif gölge */
+
+            /* Ağ Trafiği Durum Renkleri */
+            --status-safe: #2e7d32; /* Koyu yeşil */
+            --status-suspicious: #c62828; /* Koyu kırmızı */
+            --status-anomaly: #ff8f00; /* Koyu turuncu */
+
+            /* Chart.js Metin Renkleri (arka plana uygun) */
+            --chart-text-color: var(--text-primary);
+            --chart-grid-color: rgba(255, 255, 255, 0.1);
+        }
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            margin: 0;
+            /* Arka plan resmine dokunulmadı, senin url_for ile çektiğin resim kullanılacak */
+            background: url('{{ url_for("static", filename="images/background.png") }}') no-repeat center center fixed;
+            background-size: cover;
+            color: var(--text-primary);
+            line-height: 1.6;
+            min-height: 100vh; /* Tam ekran yüksekliği için */
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Container: İçeriği ortalamak ve genişliği sınırlamak için */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        /* --- Toolbar Styles (Önceki sayfalardan aynen kopyalandı) --- */
+        .toolbar {
+            background-color: var(--black-overlay);
+            padding: 12px 0;
+            box-shadow: var(--shadow-subtle);
+            border-bottom: 1px solid var(--green-light);
+            position: sticky; /* Sayfayı aşağı kaydırsan bile toolbar sabit kalsın */
+            top: 0;
+            z-index: 1000;
+        }
+
+        .toolbar .container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .toolbar-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .toolbar-left img {
+            height: 35px;
+            filter: drop-shadow(0 0 4px var(--green-light));
+        }
+
+        .toolbar-left span {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--text-secondary);
+            letter-spacing: 0.5px;
+        }
+
+        .toolbar-right {
+            display: flex;
+            gap: 15px;
+        }
+
+        .toolbar-right .nav-button {
+            padding: 8px 16px;
+            font-size: 14px;
+            border-radius: var(--border-radius-sharp);
+            background-color: var(--green-dark);
+            color: var(--text-secondary);
+            font-weight: 500;
+            transition: background-color var(--transition-speed);
+            border: none;
+            cursor: pointer;
+        }
+
+        .toolbar-right .nav-button:hover {
+            background-color: var(--green-light);
+        }
+        /* --- Toolbar Styles End --- */
+
+        /* İçerik Alanı */
+        .content {
+            flex-grow: 1; /* Kalan dikey alanı doldur */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 40px 20px; /* Üstten ve alttan boşluk */
+            background-color: rgba(0, 0, 0, 0.7); /* Arka plan üzerine hafif koyuluk */
+            width: 100%; /* İçeriğin tam genişlikte olmasını sağla */
+            box-sizing: border-box; /* Padding'i genişliğe dahil et */
+        }
+
+        .content-wrapper {
+            background-color: var(--panel-bg);
+            padding: 30px 40px;
+            border-radius: var(--border-radius-sharp);
+            box-shadow: 0 0 15px var(--green-light); /* Yeşil gölge */
+            max-width: 1000px; /* İçerik kutusunun maksimum genişliği */
+            width: 100%;
+            text-align: center;
+            box-sizing: border-box;
+            backdrop-filter: blur(3px); /* Hafif bulanıklık */
+            -webkit-backdrop-filter: blur(3px);
+        }
+
+        .content-wrapper h2 {
+            margin-bottom: 25px;
+            color: var(--green-light); /* Başlık rengi */
+            font-family: 'Montserrat', sans-serif;
+            font-size: 2em;
+            font-weight: 700;
+        }
+
+        /* Chart Container */
+        #chartContainer {
+            width: 90%; /* Grafik alanı genişliği */
+            max-width: 800px;
+            margin: 30px auto;
+            background-color: #1a1a1a; /* Grafik arka planı */
+            padding: 20px;
+            border-radius: var(--border-radius-sharp);
+            box-shadow: 0 0 15px var(--green-dark);
+            backdrop-filter: blur(3px);
+            -webkit-backdrop-filter: blur(3px);
+        }
+
+        /* Table Styles */
+        .table-wrapper {
+            margin-top: 40px;
+            width: 100%;
+            overflow-x: auto; /* Küçük ekranlarda tablo için kaydırma */
+            border-radius: var(--border-radius-sharp);
+            box-shadow: 0 0 15px var(--green-light);
+            backdrop-filter: blur(3px);
+            -webkit-backdrop-filter: blur(3px);
+        }
+
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            background-color: rgba(26, 26, 26, 0.8); /* Tablo arka planı */
+            border-radius: var(--border-radius-sharp);
+            overflow: hidden; /* Köşeleri yuvarlamak için */
+            min-width: 500px; /* Tablo çok daralmasın diye min genişlik */
+        }
+
+        th, td {
+            border: 1px solid #333;
+            padding: 12px;
+            text-align: center;
+            color: var(--text-primary);
+        }
+
+        th {
+            background-color: var(--green-dark); /* Başlık rengi */
+            color: var(--text-secondary);
+            font-weight: 600;
+        }
+
+        /* Durum renkleri */
+        .Güvenli { background-color: var(--status-safe); color: white; }
+        .Şüpheli { background-color: var(--status-suspicious); color: white; }
+        .Anomali { background-color: var(--status-anomaly); color: black; }
+
+
+        /* Chart.js özelleştirmeleri */
+        #trafficChart {
+            max-height: 400px; /* Grafiğin maksimum yüksekliği */
+        }
+        .chartjs-render-monitor { /* Chart.js canvas'ın responsive olmasını sağlar */
+            width: 100% !important;
+            height: auto !important;
+        }
+        /* Chart.js Tooltip Customization - Bu kısım JS'ten yönetilecek */
+
+        /* Responsive Düzenlemeler */
+        @media (max-width: 768px) {
+            .toolbar .container {
+                flex-direction: column;
+                gap: 10px;
+            }
+            .toolbar-left span {
+                font-size: 18px;
+            }
+            .toolbar-left img {
+                height: 30px;
+            }
+            .toolbar-right {
+                flex-wrap: wrap;
+                justify-content: center;
+                gap: 6px;
+                width: 100%;
+            }
+            .toolbar-right .nav-button {
+                flex: 1 1 48%; /* Butonlar ikişerli */
+                font-size: 12px;
+                padding: 7px 10px;
+            }
+            .content {
+                padding: 20px 15px;
+            }
+            .content-wrapper {
+                padding: 25px 30px;
+            }
+            .content-wrapper h2 {
+                font-size: 1.6em;
+            }
+            #chartContainer {
+                width: 100%;
+                padding: 15px;
+                margin-top: 20px;
+            }
+            .table-wrapper {
+                margin-top: 30px;
+            }
+            th, td {
+                padding: 8px;
+                font-size: 0.85em;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .toolbar-left span {
+                font-size: 16px;
+            }
+            .toolbar-left img {
+                height: 28px;
+            }
+            .toolbar-right .nav-button {
+                font-size: 11px;
+                padding: 5px 8px;
+            }
+            .content {
+                padding: 15px 10px;
+            }
+            .content-wrapper {
+                padding: 20px 25px;
+            }
+            .content-wrapper h2 {
+                font-size: 1.4em;
+            }
+            #chartContainer {
+                padding: 10px;
+                margin-top: 15px;
+            }
+            th, td {
+                padding: 6px;
+                font-size: 0.75em;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="toolbar">
+        <div class="container">
+            <div class="toolbar-left">
+                <img src="{{ url_for('static', filename='images/logo.png') }}" alt="CyberGuard AI Suite Logo" />
+                <span>CYBERGUARD AI SUITE</span>
+            </div>
+            <div class="toolbar-right">
+                <button class="nav-button" onclick="location.href='/'">Anasayfa</button>
+                <button class="nav-button" onclick="location.href='/malware'">Malware Analizi</button>
+                <button class="nav-button" onclick="location.href='/photo'">Fotoğraf Analizi</button>
+                <button class="nav-button" onclick="location.href='/code'">Kod Analizi</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="content">
+        <div class="content-wrapper">
+            <h2>Canlı Ağ Trafiği Analizi</h2>
+
+            <div id="chartContainer">
+                <canvas id="trafficChart"></canvas>
+            </div>
+
+            <div class="table-wrapper">
+                <table id="resultsTable">
+                    <thead>
+                        <tr>
+                            <th>Zaman</th>
+                            <th>Kaynak IP</th>
+                            <th>Hedef IP</th>
+                            <th>Durum</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+<script>
+    // CSS değişkenlerini JavaScript'e aktarma fonksiyonu
+    // Bu fonksiyon, CSS'te tanımlanan değişkenleri JS'te kullanabilmemizi sağlar
+    function getCssVariable(variable) {
+        return getComputedStyle(document.documentElement).getPropertyValue(variable).trim();
+    }
+
+    const ctx = document.getElementById('trafficChart').getContext('2d');
+
+    let trafficChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: [],
+            datasets: [
+                {
+                    label: 'Güvenli',
+                    // CSS değişkenini doğrudan Chart.js'e veriyoruz
+                    backgroundColor: getCssVariable('--status-safe')
+                },
+                {
+                    label: 'Şüpheli',
+                    backgroundColor: getCssVariable('--status-suspicious')
+                },
+                {
+                    label: 'Anomali',
+                    backgroundColor: getCssVariable('--status-anomaly')
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'top',
+                    labels: {
+                        color: getCssVariable('--chart-text-color'), // Legend metin rengi
+                        font: { family: 'Roboto', size: 14 }
+                    }
+                },
+                title: {
+                    display: true,
+                    text: 'Paket Durumu Dağılımı',
+                    color: getCssVariable('--chart-text-color'), // Başlık metin rengi
+                    font: { family: 'Montserrat', size: 18, weight: 'bold' }
+                },
+                tooltip: {
+                    backgroundColor: getCssVariable('--black-overlay'), // Tooltip arka plan rengi
+                    borderColor: getCssVariable('--green-light'), // Tooltip kenarlık rengi
+                    borderWidth: 1,
+                    titleColor: getCssVariable('--text-secondary'),
+                    bodyColor: getCssVariable('--text-primary'),
+                    cornerRadius: parseInt(getCssVariable('--border-radius-sharp')), // Corner radius sayı olmalı
+                    padding: 12
+                }
+            },
+            scales: {
+                x: {
+                    stacked: true,
+                    ticks: { color: getCssVariable('--chart-text-color') }, // X ekseni etiket rengi
+                    grid: { color: getCssVariable('--chart-grid-color') } // X ekseni ızgara rengi
+                },
+                y: {
+                    stacked: true,
+                    beginAtZero: true,
+                    ticks: { color: getCssVariable('--chart-text-color') }, // Y ekseni etiket rengi
+                    grid: { color: getCssVariable('--chart-grid-color') } // Y ekseni ızgara rengi
+                }
+            }
+        }
+    });
+
+    const tableBody = document.querySelector("#resultsTable tbody");
+
+    async function fetchNetworkData() {
+        try {
+            const response = await fetch("/network_data");
+            const json = await response.json();
+            const results = json.results;
+
+            // Clear existing table rows
+            tableBody.innerHTML = "";
+
+            // Reset chart data
+            trafficChart.data.labels = [];
+            trafficChart.data.datasets[0].data = []; // Güvenli
+            trafficChart.data.datasets[1].data = []; // Şüpheli
+            trafficChart.data.datasets[2].data = []; // Anomali
+
+            const statusCounts = {}; // Durum sayılarını tutmak için
+
+            results.forEach(item => {
+                const timeStr = new Date(item.time * 1000).toLocaleTimeString();
+                const kaynak = item.source_ip || "N/A";
+                const hedef = item.dest_ip || "N/A";
+                const durum = item.status || "Güvenli"; // Varsayılan durum
+
+                // Tabloya satır ekle
+                const tr = document.createElement("tr");
+                tr.className = durum; // Duruma göre sınıf ekle
+
+                tr.innerHTML = `
+                    <td>${timeStr}</td>
+                    <td>${kaynak}</td>
+                    <td>${hedef}</td>
+                    <td>${durum}</td>
+                `;
+                tableBody.appendChild(tr);
+
+                // Grafik verilerini güncelle (son 10 veri noktası için)
+                if (!statusCounts[timeStr]) {
+                    statusCounts[timeStr] = { "Güvenli": 0, "Şüpheli": 0, "Anomali": 0 };
+                }
+                statusCounts[timeStr][durum]++;
+            });
+
+            // Grafik verilerini durum sayılarına göre doldur
+            // Zamanları sıralamak yerine, sırayla geliyorsa forEach'i kullanabiliriz.
+            // Ama her zaman sıralı gelmesi garanti değilse sorting yapmak daha güvenlidir.
+            const uniqueTimes = Array.from(new Set(results.map(item => new Date(item.time * 1000).toLocaleTimeString()))).sort();
+
+            uniqueTimes.forEach(time => {
+                const safeCount = statusCounts[time]?.["Güvenli"] || 0;
+                const suspiciousCount = statusCounts[time]?.["Şüpheli"] || 0;
+                const anomalyCount = statusCounts[time]?.["Anomali"] || 0;
+
+                trafficChart.data.labels.push(time);
+                trafficChart.data.datasets[0].data.push(safeCount);
+                trafficChart.data.datasets[1].data.push(suspiciousCount);
+                trafficChart.data.datasets[2].data.push(anomalyCount);
+            });
+
+
+            trafficChart.update(); // Grafiği güncelle
+
+        } catch (error) {
+            console.error("Veri çekme hatası:", error);
+        }
+    }
+
+    // İlk yüklemede veriyi çek
+    fetchNetworkData();
+    // Her 5 saniyede bir veriyi yenile
+    setInterval(fetchNetworkData, 5000);
+</script>
+
+</body>
+</html>

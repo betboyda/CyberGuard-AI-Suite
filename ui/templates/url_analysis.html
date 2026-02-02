@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CyberGuard AI Suite - URL Analizi</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Montserrat:wght@600;700;800&display=swap" rel="stylesheet" />
+    <style>
+        /* Renkler: Senin verdiğin tonlara sadık kalındı */
+        :root {
+            --green-dark: #004225; /* Ana koyu yeşil */
+            --green-light: #006633; /* Açık yeşil vurgu */
+            --black-overlay: rgba(0, 0, 0, 0.85); /* Arka plan üzerine çok koyu katman */
+            --panel-bg: rgba(0, 0, 0, 0.75); /* İçerik paneli şeffaf siyah */
+            --text-primary: #e0e0e0; /* Genel metin rengi */
+            --text-secondary: #ffffff; /* Başlık ve önemli metinler */
+
+            --border-radius-sharp: 4px; /* Köşeler daha keskin */
+            --transition-speed: 0.2s ease; /* Hızlı geçişler */
+            --shadow-subtle: 0 3px 8px rgba(0, 0, 0, 0.4); /* Hafif gölge */
+
+            /* URL Analizi Sonuç Renkleri (Güvenli/Zararlı varsayımıyla) */
+            --status-safe: #2e7d32; /* Koyu yeşil */
+            --status-malicious: #c62828; /* Koyu kırmızı */
+            --status-suspicious: #ff8f00; /* Koyu turuncu */
+            --status-unknown: #424242; /* Gri */
+        }
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            margin: 0;
+            background: url('{{ url_for("static", filename="images/background.png") }}') no-repeat center center fixed;
+            background-size: cover;
+            color: var(--text-primary);
+            line-height: 1.6;
+            min-height: 100vh; /* Tam ekran yüksekliği için */
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Container: İçeriği ortalamak ve genişliği sınırlamak için */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        /* --- Toolbar Styles (Diğer sayfalardan aynen kopyalandı) --- */
+        .toolbar {
+            background-color: var(--black-overlay);
+            padding: 12px 0;
+            box-shadow: var(--shadow-subtle);
+            border-bottom: 1px solid var(--green-light);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .toolbar .container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .toolbar-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .toolbar-left img {
+            height: 35px;
+            filter: drop-shadow(0 0 4px var(--green-light));
+        }
+
+        .toolbar-left span {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--text-secondary);
+            letter-spacing: 0.5px;
+        }
+
+        .toolbar-right {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap; /* Küçük ekranlarda butonların alt satıra geçmesi için */
+            justify-content: flex-end; /* Butonları sağa hizala */
+        }
+
+        .toolbar-right .nav-button {
+            padding: 8px 16px;
+            font-size: 14px;
+            border-radius: var(--border-radius-sharp);
+            background-color: var(--green-dark);
+            color: var(--text-secondary);
+            font-weight: 500;
+            transition: background-color var(--transition-speed);
+            border: none;
+            cursor: pointer;
+            text-decoration: none; /* A etiketi için alt çizgiyi kaldır */
+            display: inline-block;
+        }
+
+        .toolbar-right .nav-button:hover {
+            background-color: var(--green-light);
+        }
+        /* --- Toolbar Styles End --- */
+
+        /* İçerik Alanı */
+        .content {
+            flex-grow: 1; /* Kalan dikey alanı doldur */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 40px 20px;
+            background-color: rgba(0, 0, 0, 0.7);
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .content-wrapper {
+            background-color: var(--panel-bg);
+            padding: 30px 40px;
+            border-radius: var(--border-radius-sharp);
+            box-shadow: 0 0 15px var(--green-light);
+            max-width: 800px; /* İçerik kutusunun maksimum genişliği */
+            width: 100%;
+            text-align: center;
+            box-sizing: border-box;
+            backdrop-filter: blur(3px);
+            -webkit-backdrop-filter: blur(3px);
+        }
+
+        .content-wrapper h1 {
+            margin-bottom: 30px;
+            color: var(--green-light);
+            font-family: 'Montserrat', sans-serif;
+            font-size: 2.2em;
+            font-weight: 700;
+        }
+
+        /* Form Stilleri */
+        form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px; /* Elemanlar arası boşluk */
+            align-items: center; /* Ortala */
+            margin-bottom: 30px;
+        }
+
+        label {
+            font-size: 1.1em;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        input[type="text"] {
+            width: calc(100% - 40px); /* Padding'i hesaba kat */
+            max-width: 500px;
+            padding: 12px;
+            border-radius: var(--border-radius-sharp);
+            border: 1px solid var(--green-dark);
+            background-color: #1a1a1a;
+            color: var(--text-primary);
+            font-size: 1rem;
+            box-sizing: border-box;
+        }
+
+        button[type="submit"] {
+            padding: 12px 24px;
+            font-size: 16px;
+            font-weight: bold;
+            border: none;
+            border-radius: var(--border-radius-sharp);
+            cursor: pointer;
+            background-color: var(--green-light);
+            color: #111;
+            transition: background-color var(--transition-speed);
+            text-transform: uppercase;
+        }
+
+        button[type="submit"]:hover {
+            background-color: #00773f;
+        }
+
+        /* Analiz Sonucu Kutusu */
+        .result-box {
+            background-color: var(--panel-bg);
+            padding: 20px;
+            border-radius: var(--border-radius-sharp);
+            margin-top: 25px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+            text-align: center;
+            backdrop-filter: blur(3px);
+            -webkit-backdrop-filter: blur(3px);
+            border: 1px solid var(--green-dark); /* Varsayılan kenarlık */
+            color: var(--text-primary);
+        }
+
+        .result-box h3 {
+            color: var(--green-light);
+            font-family: 'Montserrat', sans-serif;
+            font-size: 1.4em;
+            margin-top: 0;
+            margin-bottom: 15px;
+        }
+
+        .result-box p {
+            font-size: 1.1em;
+            font-weight: 500;
+            margin: 0;
+            word-wrap: break-word; /* Uzun URL'lerin taşmasını engelle */
+        }
+
+        .result-box strong {
+            color: var(--text-secondary); /* URL kısmını beyaz yapalım */
+            display: block; /* URL'nin ayrı satırda olmasını sağlar */
+            margin-bottom: 5px;
+        }
+
+        /* Geçmiş Analizler Bölümü */
+        .history-section {
+            margin-top: 40px;
+            text-align: center;
+        }
+
+        .history-section h3 {
+            color: var(--green-light);
+            font-family: 'Montserrat', sans-serif;
+            font-size: 1.6em;
+            margin-bottom: 20px;
+        }
+
+        .table-wrapper {
+            width: 100%;
+            overflow-x: auto; /* Küçük ekranlarda tablo için kaydırma */
+            border-radius: var(--border-radius-sharp);
+            box-shadow: 0 0 15px var(--green-light);
+            backdrop-filter: blur(3px);
+            -webkit-backdrop-filter: blur(3px);
+            margin-bottom: 20px; /* Buton ile tablo arasına boşluk */
+        }
+
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            background-color: rgba(26, 26, 26, 0.8);
+            border-radius: var(--border-radius-sharp);
+            overflow: hidden; /* Köşeleri yuvarlamak için */
+            min-width: 600px; /* Tablo çok daralmasın diye min genişlik */
+        }
+
+        th, td {
+            border: 1px solid #333;
+            padding: 12px;
+            text-align: center;
+            color: var(--text-primary);
+        }
+
+        th {
+            background-color: var(--green-dark);
+            color: var(--text-secondary);
+            font-weight: 600;
+        }
+
+        /* Sonuç durumlarına göre tablo satır rengi (isteğe bağlı, Flask tarafından gönderilen sonuca göre sınıf eklenmeli) */
+        .result-safe { background-color: rgba(46, 125, 50, 0.2); } /* Koyu yeşil şeffaf */
+        .result-malicious { background-color: rgba(198, 40, 40, 0.2); } /* Koyu kırmızı şeffaf */
+        .result-suspicious { background-color: rgba(255, 143, 0, 0.2); } /* Koyu turuncu şeffaf */
+        .result-unknown { background-color: rgba(66, 66, 66, 0.2); } /* Gri şeffaf */
+
+        /* Temizle Butonunun Yeni Yeri İçin Stil */
+        .clear-history-button-container {
+            margin-top: 20px; /* Tablo ile buton arasına boşluk */
+            width: 100%; /* Kapsayıcı genişliği */
+            text-align: center; /* Butonu ortala */
+        }
+
+        .clear-history-button-container button {
+            padding: 10px 20px;
+            font-size: 15px;
+            border: none;
+            border-radius: var(--border-radius-sharp);
+            cursor: pointer;
+            background-color: var(--status-malicious); /* Kırmızımsı temizle butonu */
+            color: white;
+            font-weight: 500;
+            transition: background-color var(--transition-speed);
+        }
+
+        .clear-history-button-container button:hover {
+            background-color: #a00;
+        }
+
+
+        /* Responsive Düzenlemeler */
+        @media (max-width: 768px) {
+            .toolbar .container {
+                flex-direction: column;
+                gap: 10px;
+            }
+            .toolbar-left span {
+                font-size: 18px;
+            }
+            .toolbar-left img {
+                height: 30px;
+            }
+            .toolbar-right {
+                flex-wrap: wrap;
+                justify-content: center;
+                gap: 6px;
+                width: 100%;
+            }
+            .toolbar-right .nav-button {
+                flex: 1 1 48%; /* Butonlar ikişerli */
+                font-size: 12px;
+                padding: 7px 10px;
+            }
+            .content {
+                padding: 20px 15px;
+            }
+            .content-wrapper {
+                padding: 25px 30px;
+            }
+            .content-wrapper h1 {
+                font-size: 1.8em;
+                margin-bottom: 20px;
+            }
+            input[type="text"] {
+                font-size: 0.9rem;
+                width: calc(100% - 30px);
+            }
+            button[type="submit"] {
+                font-size: 14px;
+                padding: 10px 20px;
+            }
+            .result-box {
+                padding: 15px;
+                font-size: 1em;
+                margin-top: 20px;
+            }
+            .result-box h3 {
+                font-size: 1.2em;
+            }
+            .history-section h3 {
+                font-size: 1.4em;
+            }
+            .clear-history-button-container button { /* Yeni buton stili */
+                font-size: 13px;
+                padding: 8px 15px;
+            }
+            th, td {
+                padding: 8px;
+                font-size: 0.85em;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .toolbar-left span {
+                font-size: 16px;
+            }
+            .toolbar-left img {
+                height: 28px;
+            }
+            .toolbar-right .nav-button {
+                font-size: 11px;
+                padding: 5px 8px;
+            }
+            .content {
+                padding: 15px 10px;
+            }
+            .content-wrapper {
+                padding: 20px 25px;
+            }
+            .content-wrapper h1 {
+                font-size: 1.5em;
+            }
+            input[type="text"] {
+                font-size: 0.85rem;
+                width: calc(100% - 20px);
+            }
+            button[type="submit"] {
+                font-size: 12px;
+                padding: 8px 15px;
+            }
+            .result-box {
+                font-size: 0.9em;
+            }
+            .result-box h3 {
+                font-size: 1.1em;
+            }
+            .history-section h3 {
+                font-size: 1.2em;
+            }
+            .clear-history-button-container button { /* Yeni buton stili */
+                font-size: 11px;
+                padding: 6px 12px;
+            }
+            th, td {
+                padding: 6px;
+                font-size: 0.75em;
+            }
+            table {
+                min-width: 400px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="toolbar">
+        <div class="container">
+            <div class="toolbar-left">
+                <img src="{{ url_for('static', filename='images/logo.png') }}" alt="CyberGuard AI Suite Logo" />
+                <span>CYBERGUARD AI SUITE</span>
+            </div>
+            <nav class="toolbar-right">
+                <a href="/" class="nav-button">Anasayfa</a>
+                <a href="/malware" class="nav-button">Malware Analizi</a>
+                <a href="/photo" class="nav-button">Fotoğraf Analizi</a>
+                <a href="/code" class="nav-button">Kod Analizi</a>
+                <a href="/network" class="nav-button">Ağ Analizi</a>
+                </nav>
+        </div>
+    </div>
+
+    <div class="content">
+        <div class="content-wrapper">
+            <h1>URL Analizi</h1>
+
+            <form method="POST">
+                <label for="url_input">Analiz etmek istediğiniz URL'yi girin:</label>
+                <input type="text" id="url_input" name="url_input" placeholder="Örn: https://guvenlisite.com" required>
+                <button type="submit">Analiz Et</button>
+            </form>
+
+            {% if result %}
+                <div class="result-box">
+                    <h3>Analiz Sonucu:</h3>
+                    <p><strong>{{ url }}</strong>: {{ result }}</p>
+                </div>
+            {% endif %}
+
+            {% if history %}
+                <div class="history-section">
+                    <h3>Geçmiş Analizler</h3>
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Zaman</th>
+                                    <th>URL</th>
+                                    <th>Sonuç</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in history %}
+                                    <tr class="{% if 'Güvenli' in item.result %}result-safe{% elif 'Zararlı' in item.result %}result-malicious{% elif 'Şüpheli' in item.result %}result-suspicious{% else %}result-unknown{% endif %}">
+                                        <td>{{ item.timestamp }}</td>
+                                        <td>{{ item.url }}</td>
+                                        <td>{{ item.result }}</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="clear-history-button-container">
+                        <form method="POST" action="{{ url_for('clear_url_history') }}">
+                            <button type="submit">Geçmişi Temizle</button>
+                        </form>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+</body>
+</html>

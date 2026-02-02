@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CyberGuard AI Suite - Fotoğraf DeepFake Analizi</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Montserrat:wght@600;700;800&display=swap" rel="stylesheet" />
+    <style>
+        /* Renkler: Senin verdiğin tonlara sadık kalındı */
+        :root {
+            --green-dark: #004225; /* Ana koyu yeşil */
+            --green-light: #006633; /* Açık yeşil vurgu */
+            --black-overlay: rgba(0, 0, 0, 0.85); /* Arka plan üzerine çok koyu katman */
+            --panel-bg: rgba(0, 0, 0, 0.75); /* İçerik paneli şeffaf siyah */
+            --text-primary: #e0e0e0; /* Genel metin rengi */
+            --text-secondary: #ffffff; /* Başlık ve önemli metinler */
+
+            --border-radius-sharp: 4px; /* Köşeler daha keskin */
+            --transition-speed: 0.2s ease; /* Hızlı geçişler */
+            --shadow-subtle: 0 3px 8px rgba(0, 0, 0, 0.4); /* Hafif gölge */
+
+            /* DeepFake Sonuç Renkleri */
+            --result-real-bg: rgba(0, 100, 0, 0.3); /* Gerçek arka plan */
+            --result-real-border: #00cc66; /* Gerçek kenarlık */
+            --result-fake-bg: rgba(139, 0, 0, 0.3); /* Sahte arka plan */
+            --result-fake-border: #ff3333; /* Sahte kenarlık */
+        }
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            margin: 0;
+            /* Arka plan resmine dokunulmadı, senin url_for ile çektiğin resim kullanılacak */
+            background: url('{{ url_for("static", filename="images/background.png") }}') no-repeat center center fixed;
+            background-size: cover;
+            color: var(--text-primary);
+            line-height: 1.6;
+            min-height: 100vh; /* Tam ekran yüksekliği için */
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Container: İçeriği ortalamak ve genişliği sınırlamak için */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        /* --- Toolbar Styles (Önceki sayfalardan aynen kopyalandı) --- */
+        .toolbar {
+            background-color: var(--black-overlay);
+            padding: 12px 0;
+            box-shadow: var(--shadow-subtle);
+            border-bottom: 1px solid var(--green-light);
+            position: sticky; /* Sayfayı aşağı kaydırsan bile toolbar sabit kalsın */
+            top: 0;
+            z-index: 1000;
+        }
+
+        .toolbar .container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .toolbar-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .toolbar-left img {
+            height: 35px;
+            filter: drop-shadow(0 0 4px var(--green-light));
+        }
+
+        .toolbar-left span {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--text-secondary);
+            letter-spacing: 0.5px;
+        }
+
+        .toolbar-right {
+            display: flex;
+            gap: 15px;
+        }
+
+        .toolbar-right .nav-button {
+            padding: 8px 16px;
+            font-size: 14px;
+            border-radius: var(--border-radius-sharp);
+            background-color: var(--green-dark);
+            color: var(--text-secondary);
+            font-weight: 500;
+            transition: background-color var(--transition-speed);
+            border: none;
+            cursor: pointer;
+        }
+
+        .toolbar-right .nav-button:hover {
+            background-color: var(--green-light);
+        }
+        /* --- Toolbar Styles End --- */
+
+        /* İçerik Alanı */
+        .content {
+            flex-grow: 1; /* Kalan dikey alanı doldur */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 40px 20px; /* Üstten ve alttan boşluk */
+            background-color: rgba(0, 0, 0, 0.7); /* Arka plan üzerine hafif koyuluk */
+            width: 100%; /* İçeriğin tam genişlikte olmasını sağla */
+            box-sizing: border-box; /* Padding'i genişliğe dahil et */
+        }
+
+        .content-wrapper {
+            background-color: var(--panel-bg);
+            padding: 30px 40px;
+            border-radius: var(--border-radius-sharp);
+            box-shadow: 0 0 15px var(--green-light); /* Yeşil gölge */
+            max-width: 600px; /* İçerik kutusunun maksimum genişliği */
+            width: 100%;
+            text-align: center;
+            box-sizing: border-box;
+            backdrop-filter: blur(3px); /* Hafif bulanıklık */
+            -webkit-backdrop-filter: blur(3px);
+        }
+
+        .content-wrapper h1 {
+            margin-bottom: 30px;
+            color: var(--green-light); /* Başlık rengi */
+            font-family: 'Montserrat', sans-serif;
+            font-size: 2.2em;
+            font-weight: 700;
+        }
+
+        input[type="file"] {
+            width: calc(100% - 24px); /* Padding dahil */
+            padding: 12px;
+            border-radius: var(--border-radius-sharp);
+            border: 1px solid var(--green-dark); /* Keskin kenarlık */
+            background-color: #1a1a1a;
+            color: var(--text-primary);
+            cursor: pointer;
+            font-size: 1rem;
+            margin-bottom: 20px; /* Alt boşluk */
+            box-sizing: border-box;
+        }
+
+        button[type="submit"] {
+            padding: 12px 24px;
+            font-size: 16px;
+            font-weight: bold;
+            border: none;
+            border-radius: var(--border-radius-sharp);
+            cursor: pointer;
+            background-color: var(--green-light); /* Buton rengi */
+            color: #111; /* Koyu buton metni */
+            transition: background-color var(--transition-speed);
+            text-transform: uppercase;
+        }
+
+        button[type="submit"]:hover {
+            background-color: #00773f; /* Hover rengi */
+        }
+
+        .result-box {
+            background-color: #1a1a1a; /* Koyu arka plan */
+            padding: 20px;
+            border-radius: var(--border-radius-sharp);
+            margin-top: 30px; /* Üst boşluk */
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+            text-align: center;
+            backdrop-filter: blur(3px);
+            -webkit-backdrop-filter: blur(3px);
+            border: 1px solid; /* Dinamik kenarlık için */
+        }
+
+        .result-box.real {
+            background-color: var(--result-real-bg);
+            border-color: var(--result-real-border);
+            color: var(--result-real-border); /* Metin rengi de yeşil olsun */
+            box-shadow: 0 0 15px var(--result-real-border);
+        }
+
+        .result-box.fake {
+            background-color: var(--result-fake-bg);
+            border-color: var(--result-fake-border);
+            color: var(--result-fake-border); /* Metin rengi de kırmızı olsun */
+            box-shadow: 0 0 15px var(--result-fake-border);
+        }
+
+        .result-box strong {
+            color: var(--text-secondary); /* Başlık kısmını beyaz yapalım */
+            display: block; /* Yeni satırda olmasını sağlar */
+            margin-bottom: 5px;
+        }
+        
+        /* Responsive Düzenlemeler */
+        @media (max-width: 768px) {
+            .toolbar .container {
+                flex-direction: column;
+                gap: 10px;
+            }
+            .toolbar-left span {
+                font-size: 18px;
+            }
+            .toolbar-left img {
+                height: 30px;
+            }
+            .toolbar-right {
+                flex-wrap: wrap;
+                justify-content: center;
+                gap: 6px;
+                width: 100%;
+            }
+            .toolbar-right .nav-button {
+                flex: 1 1 48%; /* Butonlar ikişerli */
+                font-size: 12px;
+                padding: 7px 10px;
+            }
+            .content {
+                padding: 20px 15px;
+            }
+            .content-wrapper {
+                padding: 25px 30px;
+            }
+            .content-wrapper h1 {
+                font-size: 1.8em;
+                margin-bottom: 20px;
+            }
+            input[type="file"] {
+                font-size: 0.9rem;
+            }
+            button[type="submit"] {
+                font-size: 14px;
+                padding: 10px 20px;
+            }
+            .result-box {
+                padding: 15px;
+                font-size: 16px;
+                margin-top: 20px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .toolbar-left span {
+                font-size: 16px;
+            }
+            .toolbar-left img {
+                height: 28px;
+            }
+            .toolbar-right .nav-button {
+                font-size: 11px;
+                padding: 5px 8px;
+            }
+            .content {
+                padding: 15px 10px;
+            }
+            .content-wrapper {
+                padding: 20px 25px;
+            }
+            .content-wrapper h1 {
+                font-size: 1.5em;
+            }
+            input[type="file"] {
+                font-size: 0.85rem;
+            }
+            button[type="submit"] {
+                font-size: 12px;
+                padding: 8px 15px;
+            }
+            .result-box {
+                font-size: 14px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="toolbar">
+        <div class="container">
+            <div class="toolbar-left">
+                <img src="{{ url_for('static', filename='images/logo.png') }}" alt="CyberGuard AI Suite Logo" />
+                <span>CYBERGUARD AI SUITE</span>
+            </div>
+            <div class="toolbar-right">
+                <button class="nav-button" onclick="location.href='/'">Anasayfa</button>
+                <button class="nav-button" onclick="location.href='/malware'">Malware Analizi</button>
+                <button class="nav-button" onclick="location.href='/network'">Ağ Analizi</button>
+                <button class="nav-button" onclick="location.href='/code'">Kod Analizi</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="content">
+        <div class="content-wrapper">
+            <h1>Fotoğraf DeepFake Analizi</h1>
+            <form method="POST" action="/predict_photo" enctype="multipart/form-data">
+                <input type="file" name="photo_file" accept="image/*" required><br>
+                <button type="submit">Analiz Et</button>
+            </form>
+
+            {% if result %}
+                <div class="result-box 
+                    {% if 'Sahte' in result %}
+                        fake
+                    {% elif 'Gerçek' in result %}
+                        real
+                    {% endif %}
+                ">
+                    <strong>Analiz Sonucu:</strong><br>
+                    {{ result }}
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+</body>
+</html>

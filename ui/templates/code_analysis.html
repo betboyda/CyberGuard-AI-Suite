@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CyberGuard AI Suite - Kod Analizi</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Montserrat:wght@600;700;800&display=swap" rel="stylesheet" />
+    <style>
+        /* Renkler: Senin verdiğin tonlara sadık kalındı */
+        :root {
+            --green-dark: #004225; /* Ana koyu yeşil */
+            --green-light: #006633; /* Açık yeşil vurgu */
+            --black-overlay: rgba(0, 0, 0, 0.85); /* Arka plan üzerine çok koyu katman */
+            --panel-bg: rgba(0, 0, 0, 0.75); /* İçerik paneli şeffaf siyah */
+            --text-primary: #e0e0e0; /* Genel metin rengi */
+            --text-secondary: #ffffff; /* Başlık ve önemli metinler */
+
+            --border-radius-sharp: 4px; /* Köşeler daha keskin */
+            --transition-speed: 0.2s ease; /* Hızlı geçişler */
+            --shadow-subtle: 0 3px 8px rgba(0, 0, 0, 0.4); /* Hafif gölge */
+
+            /* Alert renkleri için kendi tonlarını kullan */
+            --alert-danger-bg: rgba(255, 0, 0, 0.2);
+            --alert-danger-text: #ff4d4d;
+            --alert-danger-border: #ff4d4d;
+
+            --alert-warning-bg: rgba(255, 165, 0, 0.2);
+            --alert-warning-text: #ffa500;
+            --alert-warning-border: #ffa500;
+
+            --alert-success-bg: rgba(0, 255, 127, 0.2);
+            --alert-success-text: #00ff99;
+            --alert-success-border: #00ff99;
+        }
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            margin: 0;
+            /* Arka plan resmine dokunulmadı, senin url_for ile çektiğin resim kullanılacak */
+            background: url('{{ url_for("static", filename="images/background.png") }}') no-repeat center center fixed;
+            background-size: cover;
+            color: var(--text-primary);
+            line-height: 1.6;
+            min-height: 100vh; /* Tam ekran yüksekliği için */
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Container: İçeriği ortalamak ve genişliği sınırlamak için */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        /* --- Toolbar Styles (Önceki ana sayfadan aynen kopyalandı) --- */
+        .toolbar {
+            background-color: var(--black-overlay);
+            padding: 12px 0;
+            box-shadow: var(--shadow-subtle);
+            border-bottom: 1px solid var(--green-light);
+            position: sticky; /* Sayfayı aşağı kaydırsan bile toolbar sabit kalsın */
+            top: 0;
+            z-index: 1000;
+        }
+
+        .toolbar .container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .toolbar-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .toolbar-left img {
+            height: 35px;
+            filter: drop-shadow(0 0 4px var(--green-light));
+        }
+
+        .toolbar-left span {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--text-secondary);
+            letter-spacing: 0.5px;
+        }
+
+        .toolbar-right {
+            display: flex;
+            gap: 15px;
+        }
+
+        .toolbar-right .nav-button {
+            padding: 8px 16px;
+            font-size: 14px;
+            border-radius: var(--border-radius-sharp);
+            background-color: var(--green-dark);
+            color: var(--text-secondary);
+            font-weight: 500;
+            transition: background-color var(--transition-speed);
+            border: none;
+            cursor: pointer;
+        }
+
+        .toolbar-right .nav-button:hover {
+            background-color: var(--green-light);
+        }
+        /* --- Toolbar Styles End --- */
+
+        /* İçerik Alanı */
+        .content {
+            flex-grow: 1; /* Kalan dikey alanı doldur */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 40px 20px; /* Üstten ve alttan boşluk */
+            background-color: rgba(0, 0, 0, 0.7); /* Arka plan üzerine hafif koyuluk */
+        }
+
+        .form-box {
+            background-color: var(--panel-bg);
+            padding: 30px 40px;
+            border-radius: var(--border-radius-sharp);
+            box-shadow: 0 0 15px var(--green-light); /* Yeşil gölge */
+            max-width: 600px;
+            width: 100%;
+            text-align: center;
+            box-sizing: border-box;
+            backdrop-filter: blur(3px); /* Hafif bulanıklık */
+            -webkit-backdrop-filter: blur(3px);
+        }
+
+        .form-box h2 {
+            margin-bottom: 25px;
+            color: var(--green-light); /* Başlık rengi */
+            font-family: 'Montserrat', sans-serif;
+            font-size: 1.8em;
+            font-weight: 700;
+        }
+
+        input[type="file"] {
+            width: calc(100% - 24px); /* Padding dahil */
+            padding: 12px;
+            border-radius: var(--border-radius-sharp);
+            border: 1px solid var(--green-dark); /* Keskin kenarlık */
+            background-color: #1a1a1a;
+            color: var(--text-primary);
+            cursor: pointer;
+            font-size: 1rem;
+            margin-bottom: 25px;
+            box-sizing: border-box;
+        }
+
+        button[type="submit"], .back-button {
+            padding: 12px 24px;
+            font-size: 16px;
+            font-weight: bold;
+            border: none;
+            border-radius: var(--border-radius-sharp);
+            cursor: pointer;
+            background-color: var(--green-light); /* Buton rengi */
+            color: #111; /* Koyu buton metni */
+            transition: background-color var(--transition-speed);
+            margin-top: 15px;
+            text-transform: uppercase;
+        }
+
+        button[type="submit"]:hover, .back-button:hover {
+            background-color: #00773f; /* Hover rengi */
+        }
+
+        .analysis-result {
+            margin-top: 40px;
+            background-color: #1a1a1a; /* Koyu arka plan */
+            padding: 25px;
+            border-radius: var(--border-radius-sharp);
+            box-shadow: 0 0 15px var(--green-light); /* Yeşil gölge */
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 14px;
+            color: var(--text-primary);
+            white-space: pre-wrap;
+            max-width: 800px;
+            width: 100%;
+            overflow-x: auto; /* Yatay kaydırma gerekirse */
+            text-align: left;
+            box-sizing: border-box;
+            backdrop-filter: blur(3px); /* Hafif bulanıklık */
+            -webkit-backdrop-filter: blur(3px);
+        }
+
+        .analysis-result strong {
+            color: var(--green-light); /* Bandit rapor başlığı rengi */
+            font-size: 1.1em;
+        }
+
+        .alert-box {
+            max-width: 800px;
+            width: 100%;
+            margin-top: 30px;
+            padding: 15px 25px;
+            border-radius: var(--border-radius-sharp);
+            font-size: 16px;
+            font-weight: bold;
+            text-align: center;
+            box-sizing: border-box;
+            backdrop-filter: blur(3px); /* Hafif bulanıklık */
+            -webkit-backdrop-filter: blur(3px);
+        }
+
+        .alert-danger {
+            background-color: var(--alert-danger-bg);
+            color: var(--alert-danger-text);
+            border: 1px solid var(--alert-danger-border);
+        }
+
+        .alert-warning {
+            background-color: var(--alert-warning-bg);
+            color: var(--alert-warning-text);
+            border: 1px solid var(--alert-warning-border);
+        }
+
+        .alert-success {
+            background-color: var(--alert-success-bg);
+            color: var(--alert-success-text);
+            border: 1px solid var(--alert-success-border);
+        }
+
+        /* Responsive Düzenlemeler */
+        @media (max-width: 768px) {
+            .toolbar .container {
+                flex-direction: column;
+                gap: 10px;
+            }
+            .toolbar-left span {
+                font-size: 18px;
+            }
+            .toolbar-left img {
+                height: 30px;
+            }
+            .toolbar-right {
+                flex-wrap: wrap;
+                justify-content: center;
+                gap: 6px;
+                width: 100%;
+            }
+            .toolbar-right .nav-button {
+                flex: 1 1 48%; /* Butonlar ikişerli */
+                font-size: 12px;
+                padding: 7px 10px;
+            }
+            .content {
+                padding: 20px 15px;
+            }
+            .form-box, .analysis-result, .alert-box {
+                padding: 20px 25px;
+            }
+            .form-box h2 {
+                font-size: 1.5em;
+            }
+            input[type="file"] {
+                font-size: 0.9rem;
+            }
+            button[type="submit"], .back-button {
+                font-size: 14px;
+                padding: 10px 20px;
+            }
+            .analysis-result {
+                font-size: 13px;
+            }
+            .alert-box {
+                font-size: 14px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .toolbar-left span {
+                font-size: 16px;
+            }
+            .toolbar-left img {
+                height: 28px;
+            }
+            .toolbar-right .nav-button {
+                font-size: 11px;
+                padding: 5px 8px;
+            }
+            .content {
+                padding: 15px 10px;
+            }
+            .form-box, .analysis-result, .alert-box {
+                padding: 15px 20px;
+            }
+            .form-box h2 {
+                font-size: 1.3em;
+            }
+            input[type="file"] {
+                font-size: 0.85rem;
+            }
+            button[type="submit"], .back-button {
+                font-size: 12px;
+                padding: 8px 15px;
+            }
+            .analysis-result {
+                font-size: 12px;
+            }
+            .alert-box {
+                font-size: 13px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="toolbar">
+        <div class="container">
+            <div class="toolbar-left">
+                <img src="{{ url_for('static', filename='images/logo.png') }}" alt="CyberGuard AI Suite Logo" />
+                <span>CYBERGUARD AI SUITE</span>
+            </div>
+            <div class="toolbar-right">
+                <button class="nav-button" onclick="location.href='/'">Anasayfa</button>
+                <button class="nav-button" onclick="location.href='/malware'">Malware Analizi</button>
+                <button class="nav-button" onclick="location.href='/photo'">Fotoğraf Analizi</button>
+                <button class="nav-button" onclick="location.href='/network'">Ağ Analizi</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="content">
+        <div class="form-box">
+            <h2>Python Kod Güvenlik Analizi</h2>
+            <form action="/analyze_code" method="POST" enctype="multipart/form-data">
+                <input type="file" name="code_file" accept=".py" required>
+                <button type="submit">Analiz Et</button>
+            </form>
+        </div>
+
+        {% if analysis %}
+            {% set issue_count = analysis.count(">> Issue:") %}
+            {% if issue_count >= 5 %}
+                <div class="alert-box alert-danger">⚠️ Kritik: Kodda çok sayıda güvenlik açığı olabilir.</div>
+            {% elif issue_count >= 1 %}
+                <div class="alert-box alert-warning">⚠️ Uyarı: Kod bazı güvenlik açıkları içeriyor.</div>
+            {% else %}
+                <div class="alert-box alert-success">✅ Güvenli: Belirgin bir güvenlik açığı tespit edilmedi.</div>
+            {% endif %}
+
+            <div class="analysis-result">
+                <strong>Bandit Raporu:</strong><br><br>
+                {{ analysis }}
+            </div>
+        {% endif %}
+    </div>
+
+</body>
+</html>
